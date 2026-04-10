@@ -8,7 +8,7 @@ Blind signing remains the #1 way users lose funds on Ethereum. Wallet warnings a
 
 ## Existing Solutions
 
-Optimize for the average user, not your specific usage.
+They optimize for the average user, not your specific usage.
 
 **Hardware wallets** — can flag known malicious txs, but screen space is tiny and rules aren't configurable.
 
@@ -29,16 +29,16 @@ Optimize for the average user, not your specific usage.
 ## How It Works
 
 1. **Connect wallet** — LastCheck wraps it into a Safe multisig where the agent becomes a mandatory co-signer. EIP-7702 support is in progress for a seamless experience without Safe.
-2. **Set rules in plain English** — compiled into deterministic YAML. Hard-enforced at the first layer, AI cannot override.
+2. **Set rules in plain English** — compiled into deterministic YAML. Hard-enforced at the first layer, the AI cannot override them.
 3. **AI reviews what passes** — simulates execution, catches novel attacks and unusual behaviour.
-4. **Suspicious? You decide** — alert via Telegram, Signal, or Ledger Trayzer. Proceed or reject.
+4. **Suspicious? You decide** — alert via Telegram, Signal, or Ledger Trezor. Proceed or reject.
 
 ```
 Tx proposed
     ↓
 Hard Rules ── violates? → REJECTED
     ↓ ok
-AI Agent ── suspicious? → Alert (Telegram / Signal / Trayzer)
+AI Agent ── suspicious? → Alert (Telegram / Signal / Trezor)
     ↓ clean                    ↓
 Agent signs              You approve or reject
     ↓                          ↓
