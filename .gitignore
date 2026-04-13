@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.next/
+landing/out/
+.env.local
+.env*.local
+
+# Python
+engine/__pycache__/
+engine/**/__pycache__/
+engine/*.pyc
+engine/.venv/
+engine/venv/
+engine/*.egg-info/
+
+# Secrets & keys
+engine/.env
+engine/.agent_key
+engine/data/
+
+# OS
+.DS_Store
+Thumbs.db
+GivenProject.md

@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  engine:
+    image: ghcr.io/lastcheck/engine:latest
+    # To build locally instead: uncomment below and remove image line
+    # build: .
+    env_file: .env
+    volumes:
+      - ./config:/app/config          # mount rules.yaml for live edits
+      - ./data:/app/data              # persist agent keypair
+    ports:
+      - "8501:8501"                   # Streamlit dashboard
+    restart: unless-stopped

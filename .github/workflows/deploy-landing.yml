@@ -1,0 +1,63 @@
+# Deploy `landing/` to GitHub Pages (project site: https://<user>.github.io/<repo>/)
+name: Deploy landing to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "landing/**"
+      - ".github/workflows/deploy-landing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-landing
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Install dependencies
+        working-directory: landing
+        run: npm ci
+
+      - name: Build static site
+        working-directory: landing
+        env:
+          # Must match the repository name for https://<user>.github.io/<repo>/
+          BASE_PATH: /${{ github.event.repository.name }}
+          # URL of the onboarding app (wizard). Set repo variable NEXT_PUBLIC_APP_ORIGIN if unset here.
+          NEXT_PUBLIC_APP_ORIGIN: ${{ vars.NEXT_PUBLIC_APP_ORIGIN }}
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Static export writes `index.html` at `out/` root; assets use `/repo/...` via BASE_PATH
+          path: landing/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
