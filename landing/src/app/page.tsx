@@ -39,10 +39,9 @@ const BENEFITS = [
 ];
 
 const PREVIEW_STEPS = [
-  "Connect the wallet you already use.",
-  "Choose the protection tier you want to start with.",
-  "Deploy the engine and receive the agent signer.",
-  "Create the Safe and route every transaction through LastCheck.",
+  "Deploy the engine and pair the Telegram bot to receive the agent signer.",
+  "Connect your wallet and create a 2-of-2 Safe with the agent as the second signer.",
+  "Set the Safe in Telegram and verify that approval prompts reach you before execution.",
 ];
 
 export default function Home() {
@@ -192,7 +191,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-lg font-semibold text-white">Simple self-hosted rollout</p>
-                <p className="mt-1 text-sm lc-muted">The setup flow gets you from wallet to Safe in four steps.</p>
+                <p className="mt-1 text-sm lc-muted">The setup wizard gets you from deploy to protected Safe in three steps.</p>
               </div>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">

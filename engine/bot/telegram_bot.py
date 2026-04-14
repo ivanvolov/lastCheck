@@ -85,6 +85,28 @@ _safe_address: str | None = _seed_from_env_then_state("SAFE_ADDRESS", "safe_addr
 _pairing_code: str = secrets.token_hex(4)
 _awaiting_safe_addr: bool = False
 
+# Set by _safe_poller_task before start_http_server runs; used by the
+# inline-button override flow so the bot can write directly to the store
+# without round-tripping through the HTTP API (which would re-fire
+# telegram notifications and loop).
+_tx_store = None
+
+
+def _short_tx(tx_hash: str) -> str:
+    """First 16 hex chars of the hash. Telegram callback_data is 64-byte
+    capped, so we can't fit a full Safe tx hash."""
+    h = tx_hash[2:] if tx_hash.startswith("0x") else tx_hash
+    return h[:16]
+
+
+def _resolve_short_tx(short: str) -> str | None:
+    if _tx_store is None:
+        return None
+    for t in _tx_store.all():
+        if _short_tx(t.get("hash", "")) == short:
+            return t.get("hash")
+    return None
+
 _app_instance: Application | None = None
 
 
@@ -280,23 +302,34 @@ async def send_rejection_notice(tx: dict):
 
 
 async def _send_mcp_decision_notice(tx: dict, approved: bool):
-    """Telegram notification when an MCP client approves/rejects a tx."""
+    """Telegram notification when an MCP client approves/rejects a tx.
+    Includes override buttons so the user has the final say."""
     if _chat_id is None:
         return
     app = _get_app()
     h = tx.get("hash", "unknown")
-    short = h[:10] + "…" + h[-6:] if len(h) > 16 else h
+    short_display = h[:10] + "…" + h[-6:] if len(h) > 16 else h
     emoji, label = ("✅", "Approved by AI") if approved else ("⛔", "Rejected by AI")
     text = (
         f"{emoji} *{label}*\n\n"
-        f"Hash: `{short}`\n"
+        f"Hash: `{short_display}`\n"
         f"To: `{tx.get('to', '?')[:20]}…`\n"
         f"Value: ${tx.get('value_usd', 0):,.2f}"
     )
     reason = tx.get("flag_reason")
     if reason and not approved:
         text += f"\nReason: `{reason}`"
-    await app.bot.send_message(chat_id=_chat_id, text=text, parse_mode="Markdown")
+    text += "\n\n_You have the final say:_"
+
+    sid = _short_tx(h)
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Approve anyway", callback_data=f"final:a:{sid}"),
+        InlineKeyboardButton("⛔ Ultimately reject", callback_data=f"final:r:{sid}"),
+    ]])
+    await app.bot.send_message(
+        chat_id=_chat_id, text=text,
+        parse_mode="Markdown", reply_markup=keyboard,
+    )
 
 
 async def _on_mcp_approve(tx: dict):
@@ -311,6 +344,45 @@ async def _callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data or ""
+
+    # Final-say override buttons attached to AI decision messages.
+    # These write directly to the in-process TxStore — we deliberately
+    # don't route through the HTTP API, to avoid re-firing the MCP
+    # notification callbacks and looping.
+    if data.startswith("final:"):
+        try:
+            _, action, sid = data.split(":", 2)
+        except ValueError:
+            return
+        tx_hash = _resolve_short_tx(sid)
+        if tx_hash is None or _tx_store is None:
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.edit_message_text(
+                text=(query.message.text or "") + "\n\n⚠️ Tx no longer in store.",
+            )
+            return
+        if action == "a":
+            _tx_store.upsert({
+                "hash":        tx_hash,
+                "status":      "approved",
+                "flagged_by":  "user-override",
+                "flag_reason": None,
+            })
+            suffix = "\n\n✅ *Approved by you (final)*"
+        else:
+            _tx_store.upsert({
+                "hash":        tx_hash,
+                "status":      "flagged",
+                "flagged_by":  "user-final",
+                "flag_reason": "user-confirmed",
+            })
+            suffix = "\n\n⛔ *Rejected by you (final)*"
+        await query.edit_message_reply_markup(reply_markup=None)
+        await query.edit_message_text(
+            text=(query.message.text or "") + suffix,
+            parse_mode="Markdown",
+        )
+        return
 
     # Key management buttons — reply with a fresh message that carries the
     # same keyboard, so every response is self-contained and the user
@@ -426,7 +498,9 @@ async def _safe_poller_task():
 
     from watcher.safe_poller import SafePoller, TxStore, start_http_server
 
+    global _tx_store
     store = TxStore()
+    _tx_store = store
     rpc_url = os.environ.get("ETH_RPC_URL", "")
 
     async def _wait_and_poll():

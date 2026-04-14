@@ -41,6 +41,8 @@ Onboarding deep links use hash routes so GitHub Pages can load them reliably:
 
 ```text
 https://you.github.io/lastCheck/#/setup/step1-deploy
+https://you.github.io/lastCheck/#/setup/step2-safe
+https://you.github.io/lastCheck/#/setup/step3-telegram
 ```
 
 If your repository name is not the path you want, fork the workflow and set `BASE_PATH` to the correct path (e.g. `/my-project`).

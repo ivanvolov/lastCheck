@@ -60,7 +60,9 @@ Tx executes              Agent signs (or drops)
 For GitHub Pages project-site deployments, use hash-based onboarding URLs:
 
 - Marketing root: `https://ivanvolov.github.io/lastCheck/`
-- Onboarding: `https://ivanvolov.github.io/lastCheck/#/setup/step1-deploy`
+- Step 1 deploy: `https://ivanvolov.github.io/lastCheck/#/setup/step1-deploy`
+- Step 2 Safe setup: `https://ivanvolov.github.io/lastCheck/#/setup/step2-safe`
+- Step 3 Telegram: `https://ivanvolov.github.io/lastCheck/#/setup/step3-telegram`
 
 ## Links
 
