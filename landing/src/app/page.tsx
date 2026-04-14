@@ -51,26 +51,26 @@ const PAIN_POINTS = [
 
 const FLOW = [
   {
-    title: "Hard rules first",
-    copy: "You define limits in plain English. LastCheck compiles them into deterministic rules the agent cannot override.",
+    title: "Set non-negotiable rules",
+    copy: "Define guardrails in plain English. LastCheck compiles them into deterministic rules the AI cannot override.",
     icon: LockKeyhole,
   },
   {
-    title: "AI reviews what remains",
-    copy: "Transactions that pass the rules are simulated and checked for unusual behavior before the agent signs.",
+    title: "AI inspects what passes",
+    copy: "Transactions that clear your rules are simulated and reviewed for anomalous behavior before co-signing.",
     icon: Bot,
   },
   {
-    title: "You decide when it looks off",
-    copy: "Suspicious flows trigger an alert — Telegram, Signal, or hardware — so you approve or reject in context.",
+    title: "You approve the edge cases",
+    copy: "Suspicious activity triggers alerts in Telegram, Signal, or on hardware devices so you approve or reject in context.",
     icon: MessageSquareWarning,
   },
 ];
 
 const BENEFITS = [
-  "Invisible when things look normal — no extra co-signing UI on every click.",
-  "Configurable like a spending limit: dashboard slider or a voice note to your Telegram bot.",
-  "Self-hosted: your transaction history and rules never leave your infrastructure.",
+  "Runs quietly in the background when transactions match your normal behavior.",
+  "Adapts fast when your risk appetite changes: slider or Telegram voice command.",
+  "Self-hosted by design: your policy logic and transaction context stay under your control.",
 ];
 
 const PREVIEW_STEPS = [
@@ -87,7 +87,7 @@ export default function Home() {
         <div className="lc-panel flex items-center justify-between gap-6 px-5 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-              <ShieldCheck className="h-5 w-5 text-[#9ef0d0]" />
+              <ShieldCheck className="h-5 w-5 text-[#ffb04a]" />
             </div>
             <div>
               <p className="font-semibold text-white">LastCheck</p>
@@ -115,18 +115,18 @@ export default function Home() {
           <div className="space-y-8">
             <div className="space-y-5">
               <span className="lc-badge">
-                <span className="h-2 w-2 rounded-full bg-[#9ef0d0]" />
-                Last line of defense before execution
+                <span className="h-2 w-2 rounded-full bg-[#ff9b1f]" />
+                The final checkpoint before execution
               </span>
               <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[0.95] text-white sm:text-6xl lg:text-7xl">
-                Stop blind signing before it becomes a loss.
+                Your AI co-signer for every high-stakes transaction.
               </h1>
               <p className="max-w-2xl text-lg leading-8 lc-muted sm:text-xl">
-                A self-hosted agent acts as a mandatory co-signer on your wallet:{" "}
-                <strong className="font-semibold text-white/90">hard rules</strong> you define in
-                plain English, then <strong className="font-semibold text-white/90">AI review</strong>{" "}
-                for everything that passes. Nothing overrides your YAML. When it looks off, you
-                decide — in Telegram, Signal, or on a hardware device.
+                LastCheck adds a mandatory, self-hosted co-signer between your wallet and execution.
+                First, it enforces <strong className="font-semibold text-white/90">hard rules</strong>{" "}
+                from your own policy. Then <strong className="font-semibold text-white/90">AI review</strong>{" "}
+                checks what remains for unusual behavior. If something looks wrong, you get the final
+                say in Telegram, Signal, or on hardware devices.
               </p>
             </div>
 
@@ -142,9 +142,9 @@ export default function Home() {
 
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                ["Invisible by default", "No extra UI when everything looks normal."],
-                ["Configurable in minutes", "Tune limits like spending controls, not security code."],
-                ["Self-hosted", "Your data and your transaction review stay on your own infra."],
+                ["Built for self-custody", "A mandatory co-signer that protects wallets without giving up control."],
+                ["Policy + intelligence", "Deterministic rules plus AI simulation catches both known and novel risk."],
+                ["Operationally simple", "Tune limits in minutes instead of managing multisig internals."],
               ].map(([title, copy]) => (
                 <div key={title} className="lc-list-item">
                   <div>
@@ -157,14 +157,14 @@ export default function Home() {
           </div>
 
           <div className="lc-panel-strong relative overflow-hidden p-6 sm:p-8">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#9ef0d0]/50 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9b1f]/60 to-transparent" />
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">Live policy preview</p>
-                  <p className="mt-1 text-sm lc-muted">The kind of control normal wallets never offer.</p>
+                  <p className="mt-1 text-sm lc-muted">Control that feels like product UX, not security infrastructure.</p>
                 </div>
-                <span className="rounded-full border border-[#9ef0d0]/20 bg-[#9ef0d0]/10 px-3 py-1 text-xs font-semibold text-[#9ef0d0]">
+                <span className="rounded-full border border-[#ffb04a]/30 bg-[#ff9b1f]/10 px-3 py-1 text-xs font-semibold text-[#ffb04a]">
                   Active
                 </span>
               </div>
@@ -177,7 +177,7 @@ export default function Home() {
                       Allow trusted DEX usage up to a daily threshold. Escalate anything above it.
                     </p>
                   </div>
-                  <SlidersHorizontal className="h-5 w-5 text-[#f5c97a]" />
+                  <SlidersHorizontal className="h-5 w-5 text-[#ffb04a]" />
                 </div>
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between text-sm">
@@ -189,7 +189,7 @@ export default function Home() {
                     <span className="font-medium text-white">$5,000</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/5">
-                    <div className="h-full w-[58%] rounded-full bg-gradient-to-r from-[#9ef0d0] to-[#72d8b7]" />
+                    <div className="h-full w-[58%] rounded-full bg-gradient-to-r from-[#ffb04a] to-[#ff9b1f]" />
                   </div>
                 </div>
               </div>
@@ -226,7 +226,7 @@ export default function Home() {
             <div key={title} className="lc-panel p-6">
               <div className="flex items-center justify-between">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                  <Icon className="h-5 w-5 text-[#9ef0d0]" />
+                  <Icon className="h-5 w-5 text-[#ffb04a]" />
                 </div>
                 <span className="text-sm lc-muted">0{index + 1}</span>
               </div>
@@ -246,7 +246,7 @@ export default function Home() {
           />
           <figure className="mt-8">
             <img
-              src={withBase("/flow-diagram.svg")}
+              src={withBase("/diagram.png")}
               alt="Flow: transaction proposed, hard rules may reject, AI review may alert via Telegram Signal or hardware, then agent co-signs and execution proceeds"
               className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-[#061015]/40"
               width={720}
@@ -255,7 +255,7 @@ export default function Home() {
             />
             <figcaption className="mt-4 text-center text-sm lc-muted">
               Self-hosted — your policies and history stay on your infrastructure.{" "}
-              <a href={GITHUB_REPO} target="_blank" rel="noreferrer" className="text-[#9ef0d0] underline-offset-4 hover:underline">
+              <a href={GITHUB_REPO} target="_blank" rel="noreferrer" className="text-[#ffb04a] underline-offset-4 hover:underline">
                 Source on GitHub
               </a>
             </figcaption>
@@ -268,8 +268,8 @@ export default function Home() {
           <div className="lc-panel p-7 sm:p-8">
             <SectionHeading
               eyebrow="Reality"
-              title="Existing defenses protect the average user — not your specific usage."
-              description="Phishing, malicious approvals, and spoofed frontends succeed because warnings are easy to dismiss and not calibrated to you. LastCheck shifts the model: your limits, your patterns, your veto."
+              title="Most wallets warn. LastCheck enforces."
+              description="Phishing, malicious approvals, and spoofed frontends keep winning because warnings are generic and easy to ignore. LastCheck applies your own limits and requires a co-signer checkpoint for anything unusual."
             />
           </div>
 
@@ -277,7 +277,7 @@ export default function Home() {
             {PAIN_POINTS.map((item) => (
               <div key={item.title} className="lc-list-item">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                  <ChevronRight className="h-4 w-4 text-[#f5c97a]" />
+                  <ChevronRight className="h-4 w-4 text-[#ffb04a]" />
                 </div>
                 <div>
                   <p className="text-lg font-semibold text-white">{item.title}</p>
@@ -294,13 +294,13 @@ export default function Home() {
           <div className="lc-panel-strong p-7 sm:p-8">
             <SectionHeading
               eyebrow="Benefits"
-              title="Security that behaves more like a product than a policy engine."
-              description="You should be able to raise your risk limits for a trading day and lower them again without touching multisig internals."
+              title="Wallet security that works like a product."
+              description="Change limits for a high-risk day and roll them back later without touching Safe modules or editing configs."
             />
             <div className="mt-8 space-y-3">
               {BENEFITS.map((item) => (
                 <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 text-[#9ef0d0]" />
+                  <ShieldCheck className="mt-0.5 h-4 w-4 text-[#ffb04a]" />
                   <p className="text-sm leading-7 text-white/88">{item}</p>
                 </div>
               ))}
@@ -310,7 +310,7 @@ export default function Home() {
           <div className="lc-panel p-7 sm:p-8">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                <Server className="h-5 w-5 text-[#9ef0d0]" />
+                <Server className="h-5 w-5 text-[#ffb04a]" />
               </div>
               <div>
                 <p className="text-lg font-semibold text-white">Simple self-hosted rollout</p>
@@ -323,15 +323,15 @@ export default function Home() {
                   key={step}
                   className="flex items-center gap-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#9ef0d0]/20 bg-[#9ef0d0]/10 text-sm font-semibold text-[#9ef0d0]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#ffb04a]/30 bg-[#ff9b1f]/10 text-sm font-semibold text-[#ffb04a]">
                     {index + 1}
                   </div>
                   <p className="text-sm text-white/88">{step}</p>
                 </div>
               ))}
             </div>
-            <a href={setupUrl} className="mt-8 inline-flex items-center text-sm font-semibold text-[#9ef0d0]">
-              Open onboarding
+            <a href={setupUrl} className="mt-8 inline-flex items-center text-sm font-semibold text-[#ffb04a]">
+              Start onboarding
               <ArrowRight className="ml-2 h-4 w-4" />
             </a>
           </div>
@@ -344,11 +344,11 @@ export default function Home() {
             <div>
               <p className="lc-eyebrow">Start with one wallet</p>
               <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
-                Get a transaction firewall in front of your next signature.
+                Put a co-signer firewall in front of your next signature.
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-7 lc-muted sm:text-lg">
-                Connect a wallet, deploy the agent, and create the Safe that makes LastCheck your
-                final checkpoint before execution.
+                Connect a wallet, deploy the agent, and activate a two-layer signing flow that blocks
+                unsafe transactions before funds move.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">

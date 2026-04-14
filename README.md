@@ -1,6 +1,7 @@
 # LastCheck
 
 A self-hosted AI agent that co-signs your transactions. The last line of defense between you and a malicious tx.
+
 [👉explore👈](https://ivanvolov.github.io/lastCheck/)
 
 ## The Problem
