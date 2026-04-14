@@ -64,21 +64,16 @@ Self-hosted. Your data never leaves your infrastructure.
 - A Telegram bot token ([create one via @BotFather](https://t.me/BotFather))
 - An OpenAI API key (for voice-to-rule transcription)
 
-### Onboarding wizard (app/)
-
-```bash
-make app
-# opens http://localhost:3000 — redirects to /setup/step1-connect
-```
-
-### Marketing site (landing) & GitHub Pages
+### Site + onboarding wizard (landing/)
 
 ```bash
 make landing
-# http://localhost:3001 — “Start setup” links to NEXT_PUBLIC_APP_ORIGIN (default http://localhost:3000)
+# http://localhost:3001
+# marketing: /
+# onboarding: /setup/step1-deploy
 ```
 
-To deploy the landing site to **GitHub Pages**, enable **Settings → Pages → Source: GitHub Actions**, set the repository variable **`NEXT_PUBLIC_APP_ORIGIN`** to your deployed app URL, and push (or run the workflow manually). See [`landing/README.md`](landing/README.md) for details.
+To deploy the site to **GitHub Pages**, enable **Settings → Pages → Source: GitHub Actions**, and push (or run the workflow manually). See [`landing/README.md`](landing/README.md) for details.
 
 ### Engine (bot + dashboard + MCP server)
 

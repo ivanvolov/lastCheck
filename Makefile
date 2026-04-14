@@ -1,18 +1,14 @@
-.PHONY: help app landing engine engine-local engine-down engine-logs setup-engine
+.PHONY: help landing engine engine-local engine-down engine-logs setup-engine
 
 help:
 	@echo ""
-	@echo "  make app            Install deps and start the onboarding wizard (localhost:3000)"
-	@echo "  make landing        Install deps and start the marketing site (localhost:3001)"
+	@echo "  make landing        Install deps and start the site + onboarding wizard (localhost:3001)"
 	@echo "  make engine         Start the engine (dashboard :8501, bot, MCP server)"
 	@echo "  make engine-local   Run engine locally without Docker (pip install + processes)"
 	@echo "  make engine-down    Stop the engine containers"
 	@echo "  make engine-logs    Tail engine logs"
 	@echo "  make setup-engine   Copy .env.example → .env (edit before running make engine)"
 	@echo ""
-
-app:
-	cd app && npm install && npm run dev
 
 landing:
 	cd landing && npm install && npm run dev

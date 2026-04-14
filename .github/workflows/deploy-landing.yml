@@ -30,19 +30,17 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: landing/package-lock.json
+          cache-dependency-path: landing/package.json
 
       - name: Install dependencies
         working-directory: landing
-        run: npm ci
+        run: npm install
 
       - name: Build static site
         working-directory: landing
         env:
           # Must match the repository name for https://<user>.github.io/<repo>/
           BASE_PATH: /${{ github.event.repository.name }}
-          # URL of the onboarding app (wizard). Set repo variable NEXT_PUBLIC_APP_ORIGIN if unset here.
-          NEXT_PUBLIC_APP_ORIGIN: ${{ vars.NEXT_PUBLIC_APP_ORIGIN }}
         run: npm run build
 
       - name: Upload artifact

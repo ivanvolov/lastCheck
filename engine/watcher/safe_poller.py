@@ -16,6 +16,8 @@ import aiohttp
 import yaml
 from web3 import AsyncWeb3
 
+from watcher import tenderly
+
 log = logging.getLogger(__name__)
 
 SAFE_API = "https://safe-transaction-arbitrum.safe.global/api/v1"
@@ -231,13 +233,26 @@ class SafePoller:
             approval_amount = approval[1] if approval else 0
             is_swap = is_likely_swap(calldata)
 
+            # Tenderly simulation — authoritative source for net outflow
+            # when configured; falls back to raw ETH value otherwise.
+            token_out_usd = value_usd
+            sim_success = None
+            if tenderly.is_enabled():
+                sim = await tenderly.simulate_safe_tx(
+                    session, self.safe_address, to, calldata, value_wei,
+                )
+                if sim is not None:
+                    token_out_usd = sim["token_out_usd"] or value_usd
+                    sim_success = sim["success"]
+
             record = {
                 "hash":             tx_hash,
                 "to":               to,
                 "value_eth":        value_eth,
                 "value_usd":        value_usd,
-                "token_out_usd":    value_usd,  # fallback; real simulation would be better
+                "token_out_usd":    token_out_usd,
                 "price_impact_pct": 0,
+                "sim_success":      sim_success,
                 "data":             calldata[:64] + "…" if len(calldata) > 64 else calldata,
                 "is_contract":      is_contract,
                 "is_erc20_approval": is_erc20_approval,

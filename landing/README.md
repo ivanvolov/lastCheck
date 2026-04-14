@@ -1,6 +1,6 @@
-# LastCheck — marketing site
+# LastCheck — site + onboarding
 
-Static Next.js site (product story, flow diagram). The onboarding wizard lives in `../app/`.
+Next.js site with both marketing pages and the onboarding wizard.
 
 ## Local dev
 
@@ -8,11 +8,8 @@ Static Next.js site (product story, flow diagram). The onboarding wizard lives i
 npm install
 npm run dev
 # http://localhost:3001
+# onboarding starts at /setup/step1-deploy
 ```
-
-Links like **Start setup** use `NEXT_PUBLIC_APP_ORIGIN` (default `http://localhost:3000`) so the landing app can run beside the wizard.
-
-Copy `/.env.example` to `.env.local` and adjust if needed.
 
 ## GitHub Pages (static export)
 
@@ -23,16 +20,6 @@ The repo includes [`.github/workflows/deploy-landing.yml`](../.github/workflows/
 1. **Repository → Settings → Pages**
 2. Under **Build and deployment → Source**, choose **GitHub Actions** (not “Deploy from a branch”).
 3. **Repository → Settings → Environments** — ensure the `github-pages` environment exists (GitHub creates it on first successful deploy). No secrets are required for the default `actions/deploy-pages` flow.
-
-### Required: `NEXT_PUBLIC_APP_ORIGIN` (Actions variable)
-
-**Settings → Secrets and variables → Actions → Variables → New repository variable**
-
-| Name | Example | Purpose |
-|------|---------|--------|
-| `NEXT_PUBLIC_APP_ORIGIN` | `https://app.yourdomain.com` | Base URL of the **onboarding app** (`app/`). Baked into “Start setup” / “Protect a wallet” at **build time**. |
-
-Use the real URL where users run the wizard (Vercel, Fly, your VPS, etc.). If you omit it, those links fall back to `http://localhost:3000` in the built HTML — wrong for production.
 
 ### Optional: change `BASE_PATH`
 
@@ -51,7 +38,6 @@ If your repository name is not the path you want, fork the workflow and set `BAS
 ```bash
 cd landing
 export BASE_PATH=/YOUR_REPO_NAME
-export NEXT_PUBLIC_APP_ORIGIN=https://your-app-host.example
 npm ci
 npm run build
 # Static files in ./out — upload or serve this folder

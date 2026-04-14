@@ -16,6 +16,7 @@ engine/*.egg-info/
 # Secrets & keys
 engine/.env
 engine/.agent_key
+engine/tmp/
 engine/data/
 
 # OS
