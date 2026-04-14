@@ -13,6 +13,13 @@ RULES_PATH = Path(__file__).parent.parent.parent / "config" / "rules.yaml"
 
 inject_css()
 page_header("📋 Rules", "Firewall configuration · changes are picked up on the next transaction")
+st.markdown(
+    "<div class='lc-panel' style='margin-bottom:12px'>"
+    "<div class='lc-section-label'>Editor</div>"
+    "<div class='lc-card-line'>Tune contract allow/block lists, token spend limits, and raw YAML overrides. "
+    "Changes apply to the next transaction checks after save.</div></div>",
+    unsafe_allow_html=True,
+)
 
 # ── common Arbitrum tokens ────────────────────────────────────────────────────
 
@@ -61,8 +68,8 @@ allowlist = doc.get("allowlist", {}).get("contracts", []) or []
 al_active = len(allowlist) > 0
 
 st.markdown(
-    f"<div class='section-label'>Allowlist "
-    f"<span style='color:{'#22c55e' if al_active else '#3a3a55'}'>"
+    f"<div class='lc-panel' style='margin-bottom:10px'><div class='lc-section-label'>Allowlist "
+    f"<span style='color:{'#ffb04a' if al_active else '#7f6f58'}'>"
     f"{'● active' if al_active else '○ empty — inactive'}</span></div>",
     unsafe_allow_html=True,
 )
@@ -73,8 +80,7 @@ al_text = st.text_area(
     placeholder="0x… one address per line · leave empty to disable",
     label_visibility="collapsed",
 )
-
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── blocklist ────────────────────────────────────────────────────────────────
@@ -83,8 +89,8 @@ blocklist = doc.get("blocklist", {}).get("addresses", []) or []
 bl_active = len(blocklist) > 0
 
 st.markdown(
-    f"<div class='section-label'>Blocklist "
-    f"<span style='color:{'#ef4444' if bl_active else '#3a3a55'}'>"
+    f"<div class='lc-panel' style='margin-bottom:10px'><div class='lc-section-label'>Blocklist "
+    f"<span style='color:{'#ef4444' if bl_active else '#7f6f58'}'>"
     f"{'● active' if bl_active else '○ empty — inactive'}</span></div>",
     unsafe_allow_html=True,
 )
@@ -95,13 +101,12 @@ bl_text = st.text_area(
     placeholder="0x… one address per line · leave empty to disable",
     label_visibility="collapsed",
 )
-
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── token caps ───────────────────────────────────────────────────────────────
 
-st.markdown("<div class='section-label'>Token caps</div>", unsafe_allow_html=True)
+st.markdown("<div class='lc-panel' style='margin-bottom:10px'><div class='lc-section-label'>Token caps</div>", unsafe_allow_html=True)
 
 existing_caps: list[dict] = doc.get("token_caps", []) or []
 
@@ -150,7 +155,7 @@ used_symbols = {r["symbol"] for r in st.session_state.cap_rows}
 available = [s for s in TOKEN_SYMBOLS if SYMBOL_MAP[s]["symbol"] not in used_symbols]
 if available:
     _, add_col = st.columns([7, 2])
-    if add_col.button("＋ Add token cap"):
+    if add_col.button("Add token cap"):
         first = SYMBOL_MAP[available[0]]
         st.session_state.cap_rows.append({
             "_sel": available[0], "symbol": first["symbol"], "address": first["address"],
@@ -158,13 +163,12 @@ if available:
         })
         st.rerun()
 
-st.markdown("<br>", unsafe_allow_html=True)
-st.divider()
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── raw YAML (always visible) ─────────────────────────────────────────────────
 
-st.markdown("<div class='section-label'>Raw YAML</div>", unsafe_allow_html=True)
+st.markdown("<div class='lc-panel'><div class='lc-section-label'>Raw YAML</div>", unsafe_allow_html=True)
 raw_edit = st.text_area(
     "Raw YAML",
     value=RULES_PATH.read_text(),
@@ -172,12 +176,14 @@ raw_edit = st.text_area(
     label_visibility="collapsed",
     key="raw_yaml",
 )
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ── save ─────────────────────────────────────────────────────────────────────
 
-_, save_col = st.columns([8, 1])
-if save_col.button("💾 Save", type="primary"):
+save_left, save_col = st.columns([6, 2])
+save_left.markdown("<div class='lc-card-subtle'>Save writes structured fields unless raw YAML was edited.</div>", unsafe_allow_html=True)
+if save_col.button("Save rules", type="primary"):
     # build new doc from UI state
     new_doc = {
         "allowlist":  {"contracts":  [a.strip() for a in al_text.splitlines() if a.strip()]},

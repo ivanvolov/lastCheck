@@ -27,13 +27,15 @@ from telegram.ext import (
 )
 
 logging.basicConfig(level=logging.INFO)
+for noisy in ("httpx", "telegram", "telegram.ext", "aiohttp.access"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 ENGINE_ROOT = Path(__file__).parent.parent
 RULES_PATH = ENGINE_ROOT / "config" / "rules.yaml"
 TMP_DIR = ENGINE_ROOT / "tmp"
 KEY_PATH = TMP_DIR / ".agent_key"
-ENV_PATH = ENGINE_ROOT / ".env"
+STATE_PATH = TMP_DIR / "state.json"
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -42,32 +44,44 @@ ETH_RPC_URL = os.environ.get("ETH_RPC_URL", "")
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
-# ── .env persistence (same format the dashboard uses) ──────────────────────
+# ── Persistent runtime state in engine/tmp/state.json ─────────────────────
+# .env is read-only. Anything the bot learns at runtime (paired chat id,
+# Safe address) is written here. On startup the env wins if set, otherwise
+# we fall back to this file.
 
-def _write_env_key(key: str, value: str) -> None:
-    """Upsert a single KEY=value line in engine/.env."""
-    lines = ENV_PATH.read_text().splitlines() if ENV_PATH.exists() else []
-    out, found = [], False
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith(f"{key}=") or stripped == key:
-            out.append(f"{key}={value}")
-            found = True
-        else:
-            out.append(line)
-    if not found:
-        out.append(f"{key}={value}")
-    ENV_PATH.write_text("\n".join(out) + "\n")
+def _load_state() -> dict:
+    if not STATE_PATH.exists():
+        return {}
+    try:
+        import json
+        return json.loads(STATE_PATH.read_text()) or {}
+    except Exception as e:
+        log.warning("Failed to read %s: %s", STATE_PATH, e)
+        return {}
 
 
-# ── Runtime state (seeded from env, persisted back on change) ──────────────
+def _save_state() -> None:
+    import json
+    TMP_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {"chat_id": _chat_id, "safe_address": _safe_address}
+    STATE_PATH.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def _seed_from_env_then_state(env_key: str, state_key: str) -> str | None:
+    v = os.environ.get(env_key, "").strip()
+    if v:
+        return v
+    return (_load_state().get(state_key) or None)
+
+
+# ── Runtime state ─────────────────────────────────────────────────────────
 
 _pending: dict[str, asyncio.Future] = {}
 
-_env_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-_chat_id: int | None = int(_env_chat_id) if _env_chat_id else None
+_seed_chat_id = _seed_from_env_then_state("TELEGRAM_CHAT_ID", "chat_id")
+_chat_id: int | None = int(_seed_chat_id) if _seed_chat_id else None
 
-_safe_address: str | None = (os.environ.get("SAFE_ADDRESS", "").strip() or None)
+_safe_address: str | None = _seed_from_env_then_state("SAFE_ADDRESS", "safe_address")
 _pairing_code: str = secrets.token_hex(4)
 _awaiting_safe_addr: bool = False
 
@@ -123,44 +137,41 @@ async def _start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     _chat_id = update.effective_chat.id
-    _write_env_key("TELEGRAM_CHAT_ID", str(_chat_id))
-    log.info("Paired with chat_id=%s (persisted to %s)", _chat_id, ENV_PATH.name)
+    _save_state()
+    log.info("Paired with chat_id=%s (persisted to %s)", _chat_id, STATE_PATH)
     await update.message.reply_text(
         "✅ Paired. This is now the only chat I'll talk to.\n"
-        "_Chat id saved to settings — I won't need pairing on restart._",
+        "_Chat id saved — I won't need pairing on restart._",
         parse_mode="Markdown",
     )
     await _send_key_prompt(context)
 
 
+def _key_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("🔄 Regenerate", callback_data="key:regenerate"),
+        InlineKeyboardButton("🔑 Get public key", callback_data="key:pubkey"),
+    ]])
+
+
 async def _send_key_prompt(context: ContextTypes.DEFAULT_TYPE):
     """After pairing: check for an existing agent key and offer next actions."""
-    if has_agent_key():
-        _, address = load_or_create_keypair()
-        keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton("🔄 Regenerate", callback_data="key:regenerate"),
-            InlineKeyboardButton("🔑 Get public key", callback_data="key:pubkey"),
-        ]])
-        text = (
-            "*Agent private key already exists.*\n\n"
-            f"Current address:\n`{address}`\n\n"
-            "When your Safe is ready, run /connect\\_safe."
-        )
-        await context.bot.send_message(
-            chat_id=_chat_id, text=text,
-            parse_mode="Markdown", reply_markup=keyboard,
-        )
-    else:
-        _, address = load_or_create_keypair()
-        await context.bot.send_message(
-            chat_id=_chat_id,
-            text=(
-                "*Generated a new agent key.*\n\n"
-                f"Address (use as the second Safe signer):\n`{address}`\n\n"
-                "When your Safe is ready, run /connect\\_safe."
-            ),
-            parse_mode="Markdown",
-        )
+    existed = has_agent_key()
+    _, address = load_or_create_keypair()
+    headline = (
+        "*Agent private key already exists.*"
+        if existed
+        else "*Generated a new agent key.*"
+    )
+    text = (
+        f"{headline}\n\n"
+        f"Agent address (second Safe signer):\n`{address}`\n\n"
+        "When your Safe is ready, run /connect\\_safe to link it."
+    )
+    await context.bot.send_message(
+        chat_id=_chat_id, text=text,
+        parse_mode="Markdown", reply_markup=_key_keyboard(),
+    )
 
 
 # ── /connect_safe ──────────────────────────────────────────────────────────
@@ -203,10 +214,10 @@ async def _text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     _safe_address = text.lower()
     _awaiting_safe_addr = False
-    _write_env_key("SAFE_ADDRESS", _safe_address)
+    _save_state()
     await update.message.reply_text(
         f"✅ Safe connected:\n`{_safe_address}`\n\n"
-        "_Saved to settings._ Poller will pick it up shortly.",
+        "_Saved._ Poller will pick it up shortly.",
         parse_mode="Markdown",
     )
 
@@ -273,29 +284,41 @@ async def _callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data or ""
 
-    # Key management buttons
+    # Key management buttons — reply with a fresh message that carries the
+    # same keyboard, so every response is self-contained and the user
+    # never loses access to the buttons or the /connect_safe reminder.
     if data.startswith("key:"):
         action = data.split(":", 1)[1]
         if action == "pubkey":
             _, address = load_or_create_keypair()
-            await query.edit_message_text(
-                text=f"Agent address:\n`{address}`",
+            await query.message.reply_text(
+                text=(
+                    f"Agent address (second Safe signer):\n`{address}`\n\n"
+                    "When your Safe is ready, run /connect\\_safe to link it."
+                ),
                 parse_mode="Markdown",
+                reply_markup=_key_keyboard(),
             )
             return
         if action == "regenerate":
             if os.environ.get("AGENT_PRIVATE_KEY", "").strip():
-                await query.edit_message_text(
+                await query.message.reply_text(
                     text="Key is supplied via `AGENT_PRIVATE_KEY` env var — cannot regenerate from here.",
                     parse_mode="Markdown",
+                    reply_markup=_key_keyboard(),
                 )
                 return
             if KEY_PATH.exists():
                 KEY_PATH.unlink()
             _, address = load_or_create_keypair()
-            await query.edit_message_text(
-                text=f"🔄 *New agent key generated.*\n\nAddress:\n`{address}`",
+            await query.message.reply_text(
+                text=(
+                    f"🔄 *New agent key generated.*\n\n"
+                    f"Address (second Safe signer):\n`{address}`\n\n"
+                    "When your Safe is ready, run /connect\\_safe to link it."
+                ),
                 parse_mode="Markdown",
+                reply_markup=_key_keyboard(),
             )
             return
         return
@@ -379,8 +402,9 @@ async def _safe_poller_task():
     rpc_url = os.environ.get("ETH_RPC_URL", "")
 
     async def _wait_and_poll():
+        if _safe_address is None:
+            log.info("No Safe configured — waiting for /connect_safe …")
         while _safe_address is None:
-            log.info("Waiting for /connect_safe …")
             await asyncio.sleep(5)
         poller = SafePoller(
             safe_address=_safe_address,

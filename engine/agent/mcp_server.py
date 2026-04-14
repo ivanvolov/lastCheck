@@ -6,10 +6,13 @@ Transport: stdio (default) or HTTP via --http flag.
 
 import asyncio
 import json
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 import yaml
 from mcp.server import Server
@@ -29,44 +32,60 @@ def load_rules() -> dict:
         return yaml.safe_load(f)
 
 
+class _Wildlist(list):
+    """list where membership of the string 'all' means everything matches."""
+
+    def __contains__(self, item):  # type: ignore[override]
+        if list.__contains__(self, "all"):
+            return True
+        return list.__contains__(self, item)
+
+
 def evaluate_tx(tx: dict, rules_doc: dict, extra_ctx: dict | None = None) -> tuple[str, str]:
     """
     Returns (action, rule_id) where action is 'approve' | 'reject'.
-    Falls through to 'approve' if no rule matches.
+    Default-deny: if no rule matches, the tx is rejected.
     extra_ctx: optional dict merged into eval context (blocklist, daily_spent_usd, etc.)
     """
-    allowlist = rules_doc.get("allowlist", {})
-    allowed_contracts = [c.lower() for c in allowlist.get("contracts", [])]
-    blocklist_addrs = []
-    if extra_ctx and "blocklist" in extra_ctx:
-        blocklist_addrs = extra_ctx["blocklist"].get("addresses", [])
+    from types import SimpleNamespace
 
+    allowlist = rules_doc.get("allowlist", {})
+    allowed_contracts = _Wildlist(c.lower() for c in allowlist.get("contracts", []))
+    blocklist_addrs = _Wildlist()
+    if extra_ctx and "blocklist" in extra_ctx:
+        blocklist_addrs = _Wildlist(
+            a.lower() for a in extra_ctx["blocklist"].get("addresses", [])
+        )
+
+    # SimpleNamespace so YAML conditions can use `allowlist.contracts` /
+    # `blocklist.addresses` dot syntax instead of `allowlist["contracts"]`.
     ctx = {
         "value_usd":          tx.get("value_usd", 0),
-        "to":                 tx.get("to", "").lower(),
+        "to":                 (tx.get("to") or "").lower(),
         "is_contract":        tx.get("is_contract", False),
         "is_erc20_approval":  tx.get("is_erc20_approval", False),
         "approval_amount":    tx.get("approval_amount", 0),
-        "spender":            tx.get("spender", "").lower(),
+        "spender":            (tx.get("spender") or "").lower(),
         "token_out_usd":      tx.get("token_out_usd", 0),
         "price_impact_pct":   tx.get("price_impact_pct", 0),
         "daily_spent_usd":    0,
         "daily_swap_count":   0,
         "max_uint256":        2**256 - 1,
-        "allowlist":          {"contracts": allowed_contracts},
-        "blocklist":          {"addresses": blocklist_addrs},
+        "allowlist":          SimpleNamespace(contracts=allowed_contracts),
+        "blocklist":          SimpleNamespace(addresses=blocklist_addrs),
     }
     if extra_ctx:
-        ctx.update({k: v for k, v in extra_ctx.items() if k not in ("blocklist",)})
+        ctx.update({k: v for k, v in extra_ctx.items() if k != "blocklist"})
 
     for rule in rules_doc.get("rules", []):
         try:
             if eval(rule["condition"], {"__builtins__": {}}, ctx):  # noqa: S307
                 return rule["action"], rule["id"]
-        except Exception:
+        except Exception as e:
+            log.warning("Rule %s failed to evaluate: %s", rule.get("id", "?"), e)
             continue
 
-    return "approve", "default"
+    return "reject", "default_deny"
 
 
 # ---------------------------------------------------------------------------

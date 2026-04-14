@@ -173,7 +173,8 @@ class SafePoller:
         store: TxStore,
         on_reject=None,
     ):
-        self.safe_address = safe_address
+        # Safe Transaction Service requires a checksummed address in the URL.
+        self.safe_address = AsyncWeb3.to_checksum_address(safe_address) if safe_address else ""
         self.rpc_url = rpc_url
         self.rules_path = rules_path
         self.store = store
@@ -197,7 +198,8 @@ class SafePoller:
         url = f"{SAFE_API}/safes/{self.safe_address}/multisig-transactions/?executed=false&limit=20"
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as r:
             if r.status != 200:
-                log.warning("Safe API returned %s", r.status)
+                body = await r.text()
+                log.warning("Safe API returned %s: %s", r.status, body[:200])
                 return
             data = await r.json()
 

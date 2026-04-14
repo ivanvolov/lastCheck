@@ -1,53 +1,43 @@
 # LastCheck — Transaction Rules
-# Actions: reject | approve
-# Rules are evaluated top-to-bottom; first match wins.
+#
+# Evaluated top-to-bottom, first match wins.
+# Default action when nothing matches is REJECT (default-deny).
+#
+# See rules.md for the full variable reference and caveats.
 
 allowlist:
+  # Contracts the watcher is willing to interact with.
+  # Use the wildcard "all" to allow any destination.
   contracts: []
 
 blocklist:
+  # Hard-blocked addresses — any tx touching these is rejected immediately.
   addresses: []
 
 token_caps: []
 
 rules:
 
+  # 1. Hard-block anything on the blocklist, no exceptions.
   - id: block_blocklisted
     description: Hard-reject transactions to blocklisted addresses
     condition: "to in blocklist.addresses"
     action: reject
 
+  # 2. Block unlimited ERC-20 approvals to anything not on the allowlist.
+  #    This is the classic drainer pattern — worth keeping even with a
+  #    permissive allowlist.
   - id: block_unlimited_approval_unknown
     description: Block unlimited ERC-20 approval to unknown spender
     condition: "is_erc20_approval and approval_amount == max_uint256 and spender not in allowlist.contracts"
     action: reject
 
-  - id: block_daily_cap
-    description: Block when 24h total outbound value exceeds $5,000
-    condition: "daily_spent_usd > 5000"
-    action: reject
-
-  - id: block_high_swap_frequency
-    description: Block when more than 10 swaps executed in the last 24h
-    condition: "daily_swap_count > 10"
-    action: reject
-
-  - id: block_high_slippage
-    description: Block swaps with price impact above 10%
-    condition: "price_impact_pct > 10"
-    action: reject
-
-  - id: block_large_tx
-    description: Block transactions where token outflow exceeds $1,000
-    condition: "token_out_usd > 1000"
-    action: reject
-
-  - id: block_unknown_contract
-    description: Block interaction with a contract not on the allowlist
-    condition: "to not in allowlist.contracts and is_contract"
-    action: reject
-
-  - id: approve_known_low_value
-    description: Auto-approve known contracts with low outflow
-    condition: "to in allowlist.contracts and token_out_usd <= 1000"
+  # 3. Auto-approve anything landing on the allowlist.
+  #    Combine with `allowlist.contracts: ["all"]` for a permissive setup,
+  #    or list specific contracts for an explicit allowlist.
+  - id: approve_allowlisted
+    description: Auto-approve transactions to allowlisted contracts
+    condition: "to in allowlist.contracts"
     action: approve
+
+  # Nothing else is approved — default-deny takes over.

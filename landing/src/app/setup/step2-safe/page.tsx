@@ -20,11 +20,8 @@ export default function Step2Safe() {
     setAddress,
     agentPubKey,
     setAgentPubKey,
-    safeAddress,
-    setSafeAddress,
   } = useWizardStore();
   const [draftAgent, setDraftAgent] = useState(agentPubKey ?? "");
-  const [draftSafe, setDraftSafe] = useState(safeAddress ?? "");
 
   useEffect(() => {
     if (isConnected && connectedAddress && connectedAddress !== address) {
@@ -39,12 +36,11 @@ export default function Step2Safe() {
       ? `https://app.safe.global/new-safe/create?owners=${firstSigner},${draftAgent.trim()}&threshold=2`
       : "https://app.safe.global/new-safe/create";
 
-  const canSave = Boolean(firstSigner && draftAgent.trim().length > 0 && draftSafe.trim().length > 0);
+  const canSave = Boolean(firstSigner && draftAgent.trim().length > 0);
 
   function saveAndContinue() {
     if (!canSave) return;
     setAgentPubKey(draftAgent.trim());
-    setSafeAddress(draftSafe.trim());
     router.push("/setup/step3-telegram");
   }
 
@@ -102,33 +98,16 @@ export default function Step2Safe() {
         </p>
       </div>
 
-      <div className="lc-panel p-5 space-y-3">
-        <p className="text-sm font-medium text-white">4) Register the Safe with your agent</p>
-        <p className="text-xs lc-muted">
-          Once the Safe is deployed, open Telegram and send{" "}
-          <code className="rounded bg-black/60 px-1.5 py-0.5 font-mono text-[11px] text-gray-200">
-            /connect_safe
-          </code>{" "}
-          to your bot. It will ask for the Safe address — paste it there. The bot persists it to
-          settings and the watcher starts monitoring immediately.
-        </p>
-        <input
-          value={draftSafe}
-          onChange={(e) => setDraftSafe(e.target.value)}
-          placeholder="0x6F4F4da5DD8546c625Ab3a3aF6B4797B66f56f14"
-          className="w-full rounded-lg border border-gray-800 bg-black px-3 py-2 text-sm text-white placeholder-gray-700 focus:border-[#ff9b1f] focus:outline-none"
-        />
-        <button
-          onClick={saveAndContinue}
-          disabled={!canSave}
-          className={clsx(
-            "w-full rounded-xl py-3 text-sm font-semibold transition",
-            canSave ? "bg-[#ff9b1f] text-black hover:bg-[#ffb04a]" : "cursor-not-allowed bg-gray-800 text-gray-600"
-          )}
-        >
-          Register the Safe with your agent
-        </button>
-      </div>
+      <button
+        onClick={saveAndContinue}
+        disabled={!canSave}
+        className={clsx(
+          "w-full rounded-xl py-3 text-sm font-semibold transition",
+          canSave ? "bg-[#ff9b1f] text-black hover:bg-[#ffb04a]" : "cursor-not-allowed bg-gray-800 text-gray-600"
+        )}
+      >
+        Continue
+      </button>
 
       <div className="lc-panel p-4">
         <div className="flex items-center gap-2 text-xs lc-muted">
