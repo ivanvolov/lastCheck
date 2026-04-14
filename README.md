@@ -8,6 +8,8 @@ A self-hosted AI agent that co-signs your transactions. The last line of defense
 
 Malicious signing is still the #1 way users lose funds on Ethereum. Wallet warnings are generic, easy to dismiss, and controlled by third parties. Once you click Confirm, there is no second chance.
 
+User-layer attacks — phishing, malicious approvals, address poisoning, fake dApp frontends — account for a significant share of funds lost each year. These attacks succeed not because wallets lack warnings, but because warnings are not calibrated to how *you* actually use your wallet.
+
 ## Existing Solutions
 
 They optimize for the average user, not your specific usage.
@@ -28,12 +30,14 @@ They optimize for the average user, not your specific usage.
 
 **Easy to adjust when it's wrong.** If the agent rejects too many txs, you tune it in seconds — not by diving into wallet settings or module configs.
 
+**Self-hosted.** Your keys, rules, and transaction history stay on your infrastructure.
+
 ## How It Works
 
 1. **Connect wallet** — LastCheck wraps it into a Safe multisig where the agent becomes a mandatory co-signer. EIP-7702 support is in progress for a seamless experience without Safe.
 2. **Set rules in plain English** — compiled into deterministic YAML. Hard-enforced at the first layer, the AI cannot override them.
-3. **AI reviews what passes** — simulates execution, catches novel attacks and unusual behaviour.
-4. **Suspicious? You decide** — alert via Telegram, Signal, or Ledger Trezor. Proceed or reject.
+3. **AI reviews what passes** — simulates execution via **Nano Claw**, LastCheck's custom simulator, to catch novel attacks and anomalous behaviour. Protocol-specific skills (MEV, phishing, drainer patterns) plug in alongside it.
+4. **Suspicious? You decide** — alert via Telegram, Signal, or Ledger / Trezor. Proceed or reject.
 
 ```
 Tx proposed
@@ -47,55 +51,20 @@ Agent signs              You approve or reject
 Tx executes              Agent signs (or drops)
 ```
 
-Self-hosted. Your data never leaves your infrastructure.
+## Run it
+
+- **Engine** (bot, dashboard, watcher, Safe poller) — see [`engine/README.md`](engine/README.md)
+- **AI layer & MCP tools** for driving approvals from Claude Code — see [`engine/ai/README.md`](engine/ai/README.md)
+- **Landing site + onboarding wizard** — see [`landing/README.md`](landing/README.md)
+
+For GitHub Pages project-site deployments, use hash-based onboarding URLs:
+
+- Marketing root: `https://ivanvolov.github.io/lastCheck/`
+- Onboarding: `https://ivanvolov.github.io/lastCheck/#/setup/step1-deploy`
 
 ## Links
 
 - [ETHGlobal Showcase](https://ethglobal.com/showcase/lastcheck-ig7zw)
-
----
-
-## Running the Prototype
-
-### Prerequisites
-
-- Node.js 18+
-- Docker + Docker Compose
-- A Telegram bot token ([create one via @BotFather](https://t.me/BotFather))
-- An OpenAI API key (for voice-to-rule transcription)
-
-### Site + onboarding wizard (landing/)
-
-```bash
-make landing
-# http://localhost:3001
-# marketing: /
-# onboarding: /setup/step1-deploy
-```
-
-To deploy the site to **GitHub Pages**, enable **Settings → Pages → Source: GitHub Actions**, and push (or run the workflow manually). See [`landing/README.md`](landing/README.md) for details.
-
-### Engine (bot + dashboard + MCP server)
-
-```bash
-make setup-engine   # copies engine/.env.example → engine/.env
-                    # edit engine/.env with your tokens before continuing
-make engine         # starts containers; dashboard at http://localhost:8501
-make engine-logs    # tail logs
-make engine-down    # stop
-```
-
-**Required env vars in `engine/.env`:**
-
-| Variable | Description |
-|---|---|
-| `TELEGRAM_TOKEN` | Bot token from @BotFather |
-| `TELEGRAM_CHAT_ID` | Your personal or group chat ID |
-| `ETH_RPC_URL` | Mainnet/Sepolia RPC endpoint |
-| `FIRST_SIGNER` | Your wallet address (Safe owner #1) |
-| `OPENAI_API_KEY` | For voice message transcription |
-
-On first start the engine generates an agent keypair and broadcasts the agent's address to your Telegram chat. Use that address as the second owner when creating the Gnosis Safe in step 4 of the wizard.
 
 ## Support on Giveth
 

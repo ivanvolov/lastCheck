@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
+import { HashRouteBootstrap } from "@/components/hash-route-bootstrap";
 
 const basePath = process.env.BASE_PATH || "";
 const tabIcon = `${basePath}/iconLC.png`;
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <Providers>{children}</Providers>
+        <HashRouteBootstrap />
       </body>
     </html>
   );

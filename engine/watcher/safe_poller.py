@@ -212,7 +212,9 @@ class SafePoller:
                 continue
 
             existing = self.store.get(tx_hash)
-            # Skip if already processed past pending
+            # Skip anything the store already has a terminal or in-flight
+            # status for. `awaiting_ai` is handled by the MCP client, not
+            # the rule engine — don't re-evaluate and overwrite it.
             if existing and existing.get("status") not in ("pending", None):
                 continue
 
@@ -294,6 +296,16 @@ class SafePoller:
                         self.store.upsert({"hash": tx_hash, "telegram_sent": True})
                     except Exception as e:
                         log.error("Telegram notify failed: %s", e)
+            elif action == "confirm":
+                # Hand over to the AI / MCP client. The tx sits in
+                # `awaiting_ai` until something calls approve/reject
+                # on the TxStore HTTP endpoints.
+                self.store.upsert({
+                    "hash":        tx_hash,
+                    "status":      "awaiting_ai",
+                    "flagged_by":  "layer1",
+                    "flag_reason": rule_id,
+                })
             else:
                 self.store.upsert({"hash": tx_hash, "status": "approved"})
 
@@ -311,9 +323,40 @@ async def start_http_server(store: TxStore, port: int = 8502):
     async def handle_health(request):
         return web.json_response({"ok": True, "count": len(store.all())})
 
+    async def handle_approve(request):
+        tx_hash = request.match_info["hash"]
+        if store.get(tx_hash) is None:
+            return web.json_response({"error": "tx not found"}, status=404)
+        store.upsert({
+            "hash": tx_hash,
+            "status": "approved",
+            "flagged_by": "mcp",
+            "flag_reason": None,
+        })
+        return web.json_response({"ok": True, "hash": tx_hash, "status": "approved"})
+
+    async def handle_reject(request):
+        tx_hash = request.match_info["hash"]
+        if store.get(tx_hash) is None:
+            return web.json_response({"error": "tx not found"}, status=404)
+        try:
+            body = await request.json() if request.can_read_body else {}
+        except Exception:
+            body = {}
+        reason = (body or {}).get("reason", "mcp-reject")
+        store.upsert({
+            "hash": tx_hash,
+            "status": "flagged",
+            "flagged_by": "mcp",
+            "flag_reason": reason,
+        })
+        return web.json_response({"ok": True, "hash": tx_hash, "status": "flagged"})
+
     app = web.Application()
     app.router.add_get("/transactions", handle_transactions)
     app.router.add_get("/health", handle_health)
+    app.router.add_post("/transactions/{hash}/approve", handle_approve)
+    app.router.add_post("/transactions/{hash}/reject", handle_reject)
 
     runner = web.AppRunner(app)
     await runner.setup()

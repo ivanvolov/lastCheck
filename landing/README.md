@@ -8,7 +8,7 @@ Next.js site with both marketing pages and the onboarding wizard.
 npm install
 npm run dev
 # http://localhost:3001
-# onboarding starts at /setup/step1-deploy
+# onboarding starts at /#/setup/step1-deploy
 ```
 
 ## GitHub Pages (static export)
@@ -30,6 +30,18 @@ BASE_PATH=/${{ github.event.repository.name }}
 ```
 
 So for `github.com/you/lastCheck`, the site is served at `https://you.github.io/lastCheck/`. This must match the [GitHub Pages URL for a project site](https://docs.github.com/en/pages/getting-started-with-github-pages/types-of-github-pages-sites).
+
+Marketing stays at the repo root, for example:
+
+```text
+https://you.github.io/lastCheck/
+```
+
+Onboarding deep links use hash routes so GitHub Pages can load them reliably:
+
+```text
+https://you.github.io/lastCheck/#/setup/step1-deploy
+```
 
 If your repository name is not the path you want, fork the workflow and set `BASE_PATH` to the correct path (e.g. `/my-project`).
 

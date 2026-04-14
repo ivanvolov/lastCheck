@@ -14,6 +14,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
+import aiohttp
 import yaml
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -21,7 +22,23 @@ from mcp.types import Tool, TextContent
 
 RULES_PATH = Path(__file__).parent.parent / "config" / "rules.yaml"
 
+# Where the bot's TxStore HTTP server is reachable. Override with
+# LASTCHECK_STORE_URL if you run the bot on a different host/port.
+STORE_URL = os.environ.get("LASTCHECK_STORE_URL", "http://127.0.0.1:8502").rstrip("/")
+
 app = Server("lastcheck")
+
+
+async def _store_get(path: str) -> Any:
+    async with aiohttp.ClientSession() as s:
+        async with s.get(f"{STORE_URL}{path}") as r:
+            return await r.json()
+
+
+async def _store_post(path: str, body: dict | None = None) -> Any:
+    async with aiohttp.ClientSession() as s:
+        async with s.post(f"{STORE_URL}{path}", json=body or {}) as r:
+            return await r.json()
 
 # ---------------------------------------------------------------------------
 # Rule engine
@@ -96,17 +113,56 @@ def evaluate_tx(tx: dict, rules_doc: dict, extra_ctx: dict | None = None) -> tup
 async def list_tools() -> list[Tool]:
     return [
         Tool(
-            name="check_transaction",
+            name="list_transactions",
             description=(
-                "Evaluate a pending transaction against LastCheck rules. "
-                "Returns 'approve', 'confirm' (escalate to user), or 'reject'."
+                "List transactions the watcher has seen in the local TxStore, "
+                "with status (pending/approved/flagged). Optional `status` filter."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "tx_hash": {"type": "string", "description": "Transaction hash"},
-                    "to": {"type": "string", "description": "Recipient address"},
-                    "value_usd": {"type": "number", "description": "Value in USD"},
+                    "status": {
+                        "type": "string",
+                        "description": "Filter: pending | approved | flagged",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="approve_transaction",
+            description="Mark a transaction as approved in the TxStore by hash.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tx_hash": {"type": "string", "description": "Safe tx hash"},
+                },
+                "required": ["tx_hash"],
+            },
+        ),
+        Tool(
+            name="reject_transaction",
+            description="Mark a transaction as flagged/rejected in the TxStore by hash.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tx_hash": {"type": "string", "description": "Safe tx hash"},
+                    "reason": {"type": "string", "description": "Why you're rejecting"},
+                },
+                "required": ["tx_hash"],
+            },
+        ),
+        Tool(
+            name="check_transaction",
+            description=(
+                "Dry-run a synthetic transaction through rules.yaml. "
+                "Does NOT touch the TxStore — use this to test rules."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tx_hash": {"type": "string"},
+                    "to": {"type": "string"},
+                    "value_usd": {"type": "number"},
                     "is_contract": {"type": "boolean"},
                     "is_erc20_approval": {"type": "boolean"},
                     "approval_amount": {"type": "number"},
@@ -136,24 +192,41 @@ async def list_tools() -> list[Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    if name == "check_transaction":
+    if name == "list_transactions":
+        try:
+            txs = await _store_get("/transactions")
+        except Exception as e:
+            return [TextContent(type="text", text=f"Failed to reach TxStore at {STORE_URL}: {e}")]
+        status_filter = arguments.get("status")
+        if status_filter:
+            txs = [t for t in txs if t.get("status") == status_filter]
+        return [TextContent(type="text", text=json.dumps(txs, indent=2))]
+
+    elif name == "approve_transaction":
+        tx_hash = arguments["tx_hash"]
+        try:
+            result = await _store_post(f"/transactions/{tx_hash}/approve")
+        except Exception as e:
+            return [TextContent(type="text", text=f"Failed: {e}")]
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reject_transaction":
+        tx_hash = arguments["tx_hash"]
+        body = {"reason": arguments.get("reason", "mcp-reject")}
+        try:
+            result = await _store_post(f"/transactions/{tx_hash}/reject", body)
+        except Exception as e:
+            return [TextContent(type="text", text=f"Failed: {e}")]
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "check_transaction":
         rules_doc = load_rules()
         action, rule_id = evaluate_tx(arguments, rules_doc)
-
         result = {
             "tx_hash": arguments.get("tx_hash"),
             "action": action,
             "matched_rule": rule_id,
         }
-
-        if action == "confirm":
-            # Notify Telegram — import lazily to avoid circular deps
-            try:
-                from bot.telegram_bot import send_approval_request  # type: ignore
-                asyncio.create_task(send_approval_request(arguments))
-            except Exception as e:
-                result["telegram_error"] = str(e)
-
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
     elif name == "get_rules":

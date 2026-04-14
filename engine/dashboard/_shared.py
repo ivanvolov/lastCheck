@@ -128,6 +128,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], section.
 .lc-pending { border-left: 3px solid var(--lc-accent-strong); }
 .lc-ai { border-left: 3px solid var(--lc-accent); }
 .lc-flagged { border-left: 3px solid var(--lc-danger); }
+.lc-approved { border-left: 3px solid #22c55e; }
 
 .lc-badge {
     border-radius: 999px;
@@ -140,6 +141,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], section.
 .lc-badge-pending { background: #2d1f0a; color: var(--lc-accent-strong); }
 .lc-badge-ai { background: #3a2200; color: var(--lc-accent); }
 .lc-badge-flagged { background: #3f1515; color: var(--lc-danger); }
+.lc-badge-approved { background: #102616; color: #7ef0a7; }
 
 .lc-section-label {
     font-size: 0.7rem;

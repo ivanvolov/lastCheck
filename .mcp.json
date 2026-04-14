@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "lastcheck": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "./engine/agent/mcp_server.py"
+      ],
+      "env": {
+        "LASTCHECK_STORE_URL": "http://127.0.0.1:8502"
+      }
+    }
+  }
+}

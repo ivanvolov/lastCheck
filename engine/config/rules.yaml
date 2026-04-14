@@ -8,7 +8,8 @@
 allowlist:
   # Contracts the watcher is willing to interact with.
   # Use the wildcard "all" to allow any destination.
-  contracts: []
+  contracts:
+    - "0x156d1abd1f207f73a6ef13ef22e862fc141156bd"
 
 blocklist:
   # Hard-blocked addresses — any tx touching these is rejected immediately.
@@ -32,12 +33,14 @@ rules:
     condition: "is_erc20_approval and approval_amount == max_uint256 and spender not in allowlist.contracts"
     action: reject
 
-  # 3. Auto-approve anything landing on the allowlist.
-  #    Combine with `allowlist.contracts: ["all"]` for a permissive setup,
-  #    or list specific contracts for an explicit allowlist.
-  - id: approve_allowlisted
-    description: Auto-approve transactions to allowlisted contracts
+  # 3. Hand allowlisted txs to the AI layer for review.
+  #    The watcher parks these in `awaiting_ai` status; an MCP client
+  #    (Claude Code, Claude Desktop, etc.) then decides approve/reject.
+  #    Change action to `approve` for an auto-approve allowlist without
+  #    AI review.
+  - id: confirm_allowlisted
+    description: Hand allowlisted transactions to AI for review
     condition: "to in allowlist.contracts"
-    action: approve
+    action: confirm
 
   # Nothing else is approved — default-deny takes over.

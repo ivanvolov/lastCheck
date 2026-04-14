@@ -12,12 +12,11 @@ edit it in place — no restart needed.
 
 ## Actions
 
-Each rule has one of two actions:
+Each rule has one of three actions:
 
-- `reject` — the watcher will refuse to co-sign and Telegram-notify the user.
-- `approve` — the watcher co-signs automatically.
-
-There's no `confirm`/escalate path yet — you either `approve` or `reject`.
+- `reject` — the watcher refuses to co-sign and Telegram-notifies the user. Stored as `flagged`.
+- `approve` — the watcher co-signs automatically. Stored as `approved`.
+- `confirm` — park the tx in `awaiting_ai` status and hand it to the AI / MCP layer. An MCP client (Claude Code, Desktop, etc.) then calls `approve_transaction` or `reject_transaction` to decide. See [`../ai/README.md`](../ai/README.md).
 
 ## Wildcard: `"all"`
 

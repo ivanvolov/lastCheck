@@ -9,17 +9,10 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { SectionHeading } from "@/components/section-heading";
+import { getSetupHashUrl, withBase } from "@/lib/routes";
 
 const GITHUB_REPO = "https://github.com/ivanvolov/lastCheck";
-
-/** Prefix for static assets under GitHub Pages project sites (`BASE_PATH=/repo-name`). */
-function withBase(path: string): string {
-  const base = process.env.BASE_PATH || "";
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${normalized}`;
-}
-
-const setupUrl = "/setup/step1-deploy";
+const setupUrl = getSetupHashUrl("/setup/step1-deploy");
 
 const FLOW = [
   {

@@ -40,6 +40,11 @@ def fmt_time(ts) -> str:
         return "—"
 
 
+def is_ai_owned(tx: dict) -> bool:
+    flagged_by = (tx.get("flagged_by") or "").lower()
+    return flagged_by not in ("", "layer1")
+
+
 def tx_card_html(tx: dict, border_class: str, badge_class: str, badge_label: str) -> str:
     h = tx.get("hash", "")
     extra = ""
@@ -55,37 +60,38 @@ def tx_card_html(tx: dict, border_class: str, badge_class: str, badge_label: str
         amt_str = "unlimited" if amt >= 2**255 else f"{amt:.0f}"
         extra += f"<div class='lc-card-subtle' style='color:#ff9b1f'>ERC-20 approve · spender {spender} · {amt_str}</div>"
 
-    return f"""
-    <div class="lc-card {border_class}">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <span class="lc-card-subtle" style="font-family:monospace">{fmt_addr(h)}</span>
-        <span class="lc-badge {badge_class}">{badge_label}</span>
-      </div>
-      <div class="lc-card-line" style="margin-top:8px">
-        To: <span class="lc-card-primary" style="font-family:monospace">{fmt_addr(tx.get('to',''))}</span>
-        {"<span class='lc-card-subtle'> · contract</span>" if tx.get('is_contract') else ""}
-      </div>
-      <div class="lc-card-line">
-        Value: <b class="lc-card-primary">${tx.get('value_usd', 0):,.2f}</b>
-        &nbsp;·&nbsp; {fmt_time(tx.get('timestamp'))}
-      </div>
-      {extra}
-    </div>
-    """
+    contract_suffix = "<span class='lc-card-subtle'> · contract</span>" if tx.get("is_contract") else ""
+    return (
+        f"<div class='lc-card {border_class}'>"
+        f"<div style='display:flex;justify-content:space-between;align-items:center;gap:8px'>"
+        f"<span class='lc-card-subtle' style='font-family:monospace'>{fmt_addr(h)}</span>"
+        f"<span class='lc-badge {badge_class}'>{badge_label}</span>"
+        f"</div>"
+        f"<div class='lc-card-line' style='margin-top:8px'>"
+        f"To: <span class='lc-card-primary' style='font-family:monospace'>{fmt_addr(tx.get('to',''))}</span>"
+        f"{contract_suffix}"
+        f"</div>"
+        f"<div class='lc-card-line'>"
+        f"Value: <b class='lc-card-primary'>${tx.get('value_usd', 0):,.2f}</b>"
+        f"&nbsp;·&nbsp; {fmt_time(tx.get('timestamp'))}"
+        f"</div>"
+        f"{extra}"
+        f"</div>"
+    )
 
 
 def render_lane(column, title: str, count: int, cards_html: str, empty_text: str):
     content = cards_html or f"<div class='lc-empty'>{empty_text}</div>"
     column.markdown(
-        f"""
-        <div class="lc-panel lc-board">
-          <div class="lc-panel-head">
-            <span class="lc-panel-title">{title}</span>
-            <span class="lc-panel-count">{count}</span>
-          </div>
-          {content}
-        </div>
-        """,
+        (
+            f"<div class='lc-panel lc-board'>"
+            f"<div class='lc-panel-head'>"
+            f"<span class='lc-panel-title'>{title}</span>"
+            f"<span class='lc-panel-count'>{count}</span>"
+            f"</div>"
+            f"{content}"
+            f"</div>"
+        ),
         unsafe_allow_html=True,
     )
 
@@ -104,27 +110,30 @@ if not online:
 
 # ── columns ──────────────────────────────────────────────────────────────────
 
-pending   = [t for t in txs if t.get("status") == "pending"]
-ai_review = [t for t in txs if t.get("status") == "ai_review"]
-flagged   = [t for t in txs if t.get("status") in ("flagged", "rejected")]
-approved  = [t for t in txs if t.get("status") == "approved"]
+pending = [t for t in txs if t.get("status") == "pending"]
+ai_review = [
+    t for t in txs
+    if t.get("status") == "ai_review"
+    or t.get("status") == "approved"
+    or (t.get("status") in ("flagged", "rejected") and is_ai_owned(t))
+]
+flagged = [
+    t for t in txs
+    if t.get("status") in ("flagged", "rejected") and not is_ai_owned(t)
+]
 
 # overview strip
-k1, k2, k3, k4 = st.columns(4)
+k1, k2, k3 = st.columns(3)
 k1.markdown(
     f"<div class='lc-kpi'><div class='lc-kpi-label'>Incoming</div><div class='lc-kpi-value'>{len(pending)}</div></div>",
     unsafe_allow_html=True,
 )
 k2.markdown(
-    f"<div class='lc-kpi'><div class='lc-kpi-label'>AI Review</div><div class='lc-kpi-value'>{len(ai_review)}</div></div>",
+    f"<div class='lc-kpi'><div class='lc-kpi-label'>AI Reviewed</div><div class='lc-kpi-value'>{len(ai_review)}</div></div>",
     unsafe_allow_html=True,
 )
 k3.markdown(
     f"<div class='lc-kpi'><div class='lc-kpi-label'>Blocked</div><div class='lc-kpi-value'>{len(flagged)}</div></div>",
-    unsafe_allow_html=True,
-)
-k4.markdown(
-    f"<div class='lc-kpi'><div class='lc-kpi-label'>Approved</div><div class='lc-kpi-value'>{len(approved)}</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -141,10 +150,18 @@ render_lane(
 )
 render_lane(
     col2,
-    "AI Review",
+    "AI Reviewed",
     len(ai_review),
-    "".join(tx_card_html(t, "lc-ai", "lc-badge-ai", "in review") for t in ai_review[:20]),
-    "Nothing in review",
+    "".join(
+        tx_card_html(
+            t,
+            "lc-approved" if t.get("status") == "approved" else "lc-ai",
+            "lc-badge-approved" if t.get("status") == "approved" else "lc-badge-ai",
+            "approved" if t.get("status") == "approved" else (t.get("flagged_by") or "in review").replace("_", " "),
+        )
+        for t in ai_review[:20]
+    ),
+    "Nothing in AI layer",
 )
 render_lane(
     col3,
@@ -153,16 +170,6 @@ render_lane(
     "".join(tx_card_html(t, "lc-flagged", "lc-badge-flagged", t.get("flagged_by") or "blocked") for t in flagged[:20]),
     "No blocked transactions",
 )
-
-
-# ── approved summary bar ─────────────────────────────────────────────────────
-
-if approved:
-    st.markdown(
-        f"<div class='lc-card-subtle' style='text-align:center;margin-top:10px;color:#ffb04a'>"
-        f"{len(approved)} transaction{'s' if len(approved) != 1 else ''} approved this session</div>",
-        unsafe_allow_html=True,
-    )
 
 
 # ── auto-refresh ─────────────────────────────────────────────────────────────
