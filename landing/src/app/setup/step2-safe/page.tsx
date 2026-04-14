@@ -5,7 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { useWizardStore } from "@/lib/store";
-import { getSetupHashUrl } from "@/lib/routes";
+import { getSetupUrl } from "@/lib/routes";
 import { clsx } from "clsx";
 import { ExternalLink, Shield } from "lucide-react";
 
@@ -42,7 +42,7 @@ export default function Step2Safe() {
   function saveAndContinue() {
     if (!canSave) return;
     setAgentPubKey(draftAgent.trim());
-    router.push(getSetupHashUrl("/setup/step3-telegram"));
+    router.push(getSetupUrl("/setup/step3-telegram"));
   }
 
   return (

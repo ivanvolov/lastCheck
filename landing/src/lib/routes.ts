@@ -5,6 +5,11 @@ export function withBase(path: string): string {
   return `${base}${normalized}`;
 }
 
+export function getSetupUrl(path: `/setup/${string}`): string {
+  const normalized = path.endsWith("/") ? path : `${path}/`;
+  return withBase(normalized);
+}
+
 export function getSetupHashUrl(path: `/setup/${string}`): string {
   return `${withBase("/")}#${path}`;
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWizardStore, DeployTarget } from "@/lib/store";
-import { getSetupHashUrl } from "@/lib/routes";
+import { getSetupUrl } from "@/lib/routes";
 import { clsx } from "clsx";
 import { Check, Cloud, Copy, Lock, Server } from "lucide-react";
 
@@ -280,7 +280,7 @@ export default function Step1Deploy() {
       )}
 
       <button
-        onClick={() => router.push(getSetupHashUrl("/setup/step2-safe"))}
+        onClick={() => router.push(getSetupUrl("/setup/step2-safe"))}
         disabled={!isReady}
         className={clsx(
           "w-full rounded-xl py-3 text-sm font-semibold transition",

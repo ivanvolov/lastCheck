@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { getSetupUrl } from "@/lib/routes";
 
 const SETUP_HASH_PREFIX = "#/setup/";
 
@@ -14,9 +15,10 @@ function getSetupRedirectUrl() {
   if (!target.startsWith("/setup/")) return null;
 
   const normalizedPath = pathname.replace(/\/+$/, "");
-  if (normalizedPath.includes("/setup/")) return null;
+  const redirectPath = getSetupUrl(target as `/setup/${string}`).replace(/\/+$/, "");
+  if (normalizedPath === redirectPath) return null;
 
-  return `${normalizedPath}${target}/`;
+  return `${redirectPath}/`;
 }
 
 export function HashRouteBootstrap() {

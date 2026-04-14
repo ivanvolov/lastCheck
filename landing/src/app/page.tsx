@@ -9,10 +9,10 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { SectionHeading } from "@/components/section-heading";
-import { getSetupHashUrl, withBase } from "@/lib/routes";
+import { getSetupUrl, withBase } from "@/lib/routes";
 
 const GITHUB_REPO = "https://github.com/ivanvolov/lastCheck";
-const setupUrl = getSetupHashUrl("/setup/step1-deploy");
+const setupUrl = getSetupUrl("/setup/step1-deploy");
 
 const FLOW = [
   {
