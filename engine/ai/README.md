@@ -2,9 +2,10 @@
 
 The AI layer is the second pass after the deterministic rule engine.
 Hard rules from `config/rules.yaml` run first and are authoritative —
-the AI **cannot** override them. Anything that passes the rules is
-then handed to the AI layer for a deeper look: simulation, protocol-
-specific heuristics, and agent-driven review via MCP.
+the AI **cannot** override them. Rules with the `confirm` action park
+their tx in `awaiting_ai` status; the AI layer (an MCP client like
+Claude Code) then decides via simulation, protocol-specific heuristics,
+and human-in-the-loop overrides via Telegram.
 
 For running the engine itself, see [`../README.md`](../README.md).
 For authoring rules, see [`../config/rules.md`](../config/rules.md).
@@ -97,7 +98,7 @@ your engine runs on a different host or port, override
 
 | Tool | What it does |
 |---|---|
-| `list_transactions` | Return everything the watcher has in the TxStore, with status. Optional `status` filter: `pending` / `approved` / `flagged`. |
+| `list_transactions` | Return everything the watcher has in the TxStore, with status. Optional `status` filter: `pending` / `awaiting_ai` / `approved` / `flagged`. |
 | `approve_transaction` | Mark a tx by hash as approved in the TxStore. |
 | `reject_transaction` | Mark a tx by hash as flagged, with an optional `reason`. |
 | `check_transaction` | Dry-run a synthetic tx through `rules.yaml`. Does **not** touch the TxStore — use this to test new rules. |
@@ -106,11 +107,15 @@ your engine runs on a different host or port, override
 
 ### Example prompts
 
-- *"List any flagged transactions."*
+- *"List transactions awaiting AI review."*
 - *"Show me pending transactions and summarize what each one does."*
 - *"Approve 0xce9cccae1e…"*
 - *"Reject 0xdead… — it's an unlimited approval to an unknown spender."*
 - *"Add a rule that blocks any transfer over $500."*
+
+When you approve or reject from MCP, the bot also fires a Telegram
+notification with **`✅ Approve anyway`** / **`⛔ Ultimately reject`**
+inline buttons so you have the final say on the AI's decision.
 
 ### Caveat
 

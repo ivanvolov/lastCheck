@@ -57,12 +57,12 @@ Tx executes              Agent signs (or drops)
 - **AI layer & MCP tools** for driving approvals from Claude Code — see [`engine/ai/README.md`](engine/ai/README.md)
 - **Landing site + onboarding wizard** — see [`landing/README.md`](landing/README.md)
 
-For GitHub Pages project-site deployments, use hash-based onboarding URLs:
+For GitHub Pages project-site deployments, use direct onboarding URLs:
 
-- Marketing root: `https://ivanvolov.github.io/lastCheck/`
-- Step 1 deploy: `https://ivanvolov.github.io/lastCheck/#/setup/step1-deploy`
-- Step 2 Safe setup: `https://ivanvolov.github.io/lastCheck/#/setup/step2-safe`
-- Step 3 Telegram: `https://ivanvolov.github.io/lastCheck/#/setup/step3-telegram`
+- Website root: `https://ivanvolov.github.io/lastCheck/`
+- Step 1 deploy: `https://ivanvolov.github.io/lastCheck/setup/step1-deploy/`
+- Step 2 Safe setup: `https://ivanvolov.github.io/lastCheck/setup/step2-safe/`
+- Step 3 Telegram: `https://ivanvolov.github.io/lastCheck/setup/step3-telegram/`
 
 ## Links
 

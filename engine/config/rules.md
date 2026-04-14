@@ -3,9 +3,9 @@
 `rules.yaml` is the rulebook the watcher evaluates every pending Safe
 transaction against. Rules are processed **top to bottom** and the **first
 match wins**. If nothing matches, the default action is **`reject`**
-(default-deny): anything the rulebook doesn't explicitly approve is
-blocked. You must have at least one `approve` rule or every tx will be
-rejected.
+(default-deny): anything the rulebook doesn't explicitly approve or hand
+to AI review is blocked. You need at least one `approve` or `confirm`
+rule, otherwise every tx falls through to default-deny.
 
 The watcher re-reads this file on every poll tick (every 5s), so you can
 edit it in place — no restart needed.
@@ -117,9 +117,11 @@ need them.
 2. **`block_unlimited_approval_unknown`** — reject `approve(spender,
    max_uint256)` when the spender is not on the allowlist. Classic
    drainer guard.
-3. **`approve_allowlisted`** — approve any tx whose `to` is on
-   `allowlist.contracts`. Combine with `contracts: ["all"]` for a
-   permissive setup, or list specific contracts explicitly.
+3. **`confirm_allowlisted`** — hand any tx whose `to` is on
+   `allowlist.contracts` to the AI layer (`awaiting_ai` status), where
+   an MCP client decides via `approve_transaction` /
+   `reject_transaction`. To skip AI review and auto-approve instead,
+   change the rule's `action:` from `confirm` to `approve`.
 
 Anything that doesn't match falls through to default-deny.
 
@@ -132,7 +134,10 @@ allowlist:
   contracts: ["all"]
 ```
 
-Every tx is auto-approved, except those matching a blocklisted address.
+Every non-blocklisted tx is sent to AI review (`awaiting_ai`) under the
+shipped ruleset. Replace `confirm` with `approve` in
+`confirm_allowlisted` if you'd rather auto-approve them and skip the
+AI step.
 
 > ⚠️ **Note:** wildcarding `allowlist.contracts` with `"all"` also
 > satisfies the `spender not in allowlist.contracts` check in
@@ -152,8 +157,8 @@ blocklist:
     - "0x0000000000000000000000000000000000000bad"
 ```
 
-Only the Uniswap V3 router is allowed; everything else is denied by
-default.
+Only Uniswap V3 router txs reach the AI layer; everything else is
+denied by default.
 
 ## Adding your own rules
 
@@ -170,6 +175,11 @@ that are known to work today:
 - id: cap_per_tx
   condition: "token_out_usd > 1000"
   action: reject
+
+# Hand large txs to AI review instead of auto-rejecting
+- id: confirm_large
+  condition: "token_out_usd > 500"
+  action: confirm
 ```
 
 Not yet working and intentionally not shipped:

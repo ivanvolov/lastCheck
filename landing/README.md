@@ -5,11 +5,14 @@ Next.js site with both marketing pages and the onboarding wizard.
 ## Local dev
 
 ```bash
+cd landing
 npm install
 npm run dev
 # http://localhost:3001
-# onboarding starts at /#/setup/step1-deploy
+# onboarding starts at /setup/step1-deploy/
 ```
+
+Or from the repo root: `make landing`.
 
 ## GitHub Pages (static export)
 
@@ -37,13 +40,15 @@ Marketing stays at the repo root, for example:
 https://you.github.io/lastCheck/
 ```
 
-Onboarding deep links use hash routes so GitHub Pages can load them reliably:
+Onboarding deep links should use direct setup routes:
 
 ```text
-https://you.github.io/lastCheck/#/setup/step1-deploy
-https://you.github.io/lastCheck/#/setup/step2-safe
-https://you.github.io/lastCheck/#/setup/step3-telegram
+https://you.github.io/lastCheck/setup/step1-deploy/
+https://you.github.io/lastCheck/setup/step2-safe/
+https://you.github.io/lastCheck/setup/step3-telegram/
 ```
+
+Legacy hash links such as `/#/setup/step2-safe` are redirected to the matching direct route for backward compatibility.
 
 If your repository name is not the path you want, fork the workflow and set `BASE_PATH` to the correct path (e.g. `/my-project`).
 
