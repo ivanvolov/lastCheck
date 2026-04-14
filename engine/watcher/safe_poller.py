@@ -314,7 +314,12 @@ class SafePoller:
 
 # ── HTTP server ──────────────────────────────────────────────────────────────
 
-async def start_http_server(store: TxStore, port: int = 8502):
+async def start_http_server(
+    store: TxStore,
+    port: int = 8502,
+    on_mcp_approve=None,
+    on_mcp_reject=None,
+):
     from aiohttp import web
 
     async def handle_transactions(request):
@@ -333,6 +338,11 @@ async def start_http_server(store: TxStore, port: int = 8502):
             "flagged_by": "mcp",
             "flag_reason": None,
         })
+        if on_mcp_approve:
+            try:
+                await on_mcp_approve(store.get(tx_hash))
+            except Exception as e:
+                log.error("on_mcp_approve failed: %s", e)
         return web.json_response({"ok": True, "hash": tx_hash, "status": "approved"})
 
     async def handle_reject(request):
@@ -350,6 +360,11 @@ async def start_http_server(store: TxStore, port: int = 8502):
             "flagged_by": "mcp",
             "flag_reason": reason,
         })
+        if on_mcp_reject:
+            try:
+                await on_mcp_reject(store.get(tx_hash))
+            except Exception as e:
+                log.error("on_mcp_reject failed: %s", e)
         return web.json_response({"ok": True, "hash": tx_hash, "status": "flagged"})
 
     app = web.Application()

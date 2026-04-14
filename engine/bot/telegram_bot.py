@@ -279,6 +279,34 @@ async def send_rejection_notice(tx: dict):
     await app.bot.send_message(chat_id=_chat_id, text=text, parse_mode="Markdown")
 
 
+async def _send_mcp_decision_notice(tx: dict, approved: bool):
+    """Telegram notification when an MCP client approves/rejects a tx."""
+    if _chat_id is None:
+        return
+    app = _get_app()
+    h = tx.get("hash", "unknown")
+    short = h[:10] + "…" + h[-6:] if len(h) > 16 else h
+    emoji, label = ("✅", "Approved by AI") if approved else ("⛔", "Rejected by AI")
+    text = (
+        f"{emoji} *{label}*\n\n"
+        f"Hash: `{short}`\n"
+        f"To: `{tx.get('to', '?')[:20]}…`\n"
+        f"Value: ${tx.get('value_usd', 0):,.2f}"
+    )
+    reason = tx.get("flag_reason")
+    if reason and not approved:
+        text += f"\nReason: `{reason}`"
+    await app.bot.send_message(chat_id=_chat_id, text=text, parse_mode="Markdown")
+
+
+async def _on_mcp_approve(tx: dict):
+    await _send_mcp_decision_notice(tx, approved=True)
+
+
+async def _on_mcp_reject(tx: dict):
+    await _send_mcp_decision_notice(tx, approved=False)
+
+
 async def _callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -417,7 +445,11 @@ async def _safe_poller_task():
 
     await asyncio.gather(
         _wait_and_poll(),
-        start_http_server(store),
+        start_http_server(
+            store,
+            on_mcp_approve=_on_mcp_approve,
+            on_mcp_reject=_on_mcp_reject,
+        ),
     )
 
 

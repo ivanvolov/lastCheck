@@ -1,26 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 const SETUP_HASH_PREFIX = "#/setup/";
 
+function getSetupRedirectUrl() {
+  if (typeof window === "undefined") return null;
+
+  const { hash, pathname } = window.location;
+  if (!hash.startsWith(SETUP_HASH_PREFIX)) return null;
+
+  const target = hash.slice(1).replace(/\/+$/, "");
+  if (!target.startsWith("/setup/")) return null;
+
+  const normalizedPath = pathname.replace(/\/+$/, "");
+  if (normalizedPath.includes("/setup/")) return null;
+
+  return `${normalizedPath}${target}/`;
+}
+
 export function HashRouteBootstrap() {
-  const router = useRouter();
-  const pathname = usePathname();
-
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (pathname !== "/") return;
+    const redirectToSetupRoute = () => {
+      const redirectUrl = getSetupRedirectUrl();
+      if (!redirectUrl) return;
 
-    const { hash } = window.location;
-    if (!hash.startsWith(SETUP_HASH_PREFIX)) return;
+      window.location.replace(redirectUrl);
+    };
 
-    const target = hash.slice(1);
-    if (!target.startsWith("/setup/")) return;
+    redirectToSetupRoute();
+    window.addEventListener("hashchange", redirectToSetupRoute);
 
-    router.replace(target);
-  }, [pathname, router]);
+    return () => window.removeEventListener("hashchange", redirectToSetupRoute);
+  }, []);
 
   return null;
 }
