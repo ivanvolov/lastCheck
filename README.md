@@ -1,6 +1,7 @@
 # LastCheck
 
 A self-hosted AI agent that co-signs your transactions. The last line of defense between you and a malicious tx.
+[👉explore👈](https://ivanvolov.github.io/lastCheck/)
 
 ## The Problem
 
@@ -99,3 +100,7 @@ make engine-down    # stop
 | `OPENAI_API_KEY` | For voice message transcription |
 
 On first start the engine generates an agent keypair and broadcasts the agent's address to your Telegram chat. Use that address as the second owner when creating the Gnosis Safe in step 4 of the wizard.
+
+## Support on Giveth
+
+LastCheck is listed as a public good on Giveth — [support development here](https://giveth.io/project/self-hosted-ai-co-signer-for-your-transactions).
